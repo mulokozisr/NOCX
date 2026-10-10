@@ -40,3 +40,7 @@ next-env.d.ts
 /.sites-runtime/
 /outputs/
 /work/
+
+# Generated local verification files
+*.tsbuildinfo
+**/__pycache__/

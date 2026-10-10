@@ -14,6 +14,7 @@ type LiveMetric = {
 
 type LivePayload = {
   live: boolean;
+  health?: {status: string; reason: string};
   availability: null | {
     observedAt: string;
     latencyMs: number | null;
@@ -167,11 +168,11 @@ export default function MikrotikPilot() {
         <div className="mtp-live-cards">
           <article>
             <CheckCircle2 />
-            <span><small>Availability</small><strong>{live?.availability ? live.availability.online ? "Online" : "Offline" : "—"}</strong><em>{live?.availability ? `${live.availability.packetLossPct}% packet loss` : "No sample"}</em></span>
+            <span><small>Availability</small><strong>{loadError || !live?.live ? "Unknown" : live.availability?.online ? "Online" : "Offline"}</strong><em>{loadError ? "Telemetry request failed" : live?.health?.reason ?? "No sample"}</em></span>
           </article>
           <article>
             <Gauge />
-            <span><small>Latency</small><strong>{live?.availability?.latencyMs === null || live?.availability?.latencyMs === undefined ? "—" : `${live.availability.latencyMs} ms`}</strong><em>ICMP average</em></span>
+            <span><small>Latency</small><strong>{loadError || !live?.live || live?.availability?.latencyMs === null || live?.availability?.latencyMs === undefined ? "—" : `${live.availability.latencyMs} ms`}</strong><em>ICMP average</em></span>
           </article>
           <article>
             <TimerReset />
