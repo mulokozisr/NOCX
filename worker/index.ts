@@ -4,7 +4,7 @@ import handler from "vinext/server/app-router-entry";
 import { buildMetricRollups } from "../db/rollups";
 
 interface Env {
-  ASSETS: Fetcher;
+  ASSETS: { fetch(request: Request): Promise<Response> };
   DB: D1Database;
   IMAGES: {
     input(stream: ReadableStream): {

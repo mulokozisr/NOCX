@@ -1,0 +1,6 @@
+.status-unknown { color: #d0d7e2; background: rgba(148,163,184,.13); }
+.status-unknown i { background: #94a3b8; }
+.inventory-page .field-label select { padding: 10px 12px; min-width: 160px; border: 1px solid var(--border, #334155); border-radius: 8px; background: var(--surface, #111827); color: inherit; }
+.inventory-page .field-label input[type="checkbox"] { width: auto; }
+.inventory-page form .primary-button { align-self: end; }
+.monitoring-page { padding: 24px; }

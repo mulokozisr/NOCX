@@ -9,26 +9,22 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  Cloud,
   Cable,
   Database,
   FileText,
   Gauge,
   GitBranch,
-  HardDrive,
   LayoutDashboard,
   Menu,
   Network,
   PackageSearch,
   PlugZap,
-  Radio,
   Router,
   Search,
   Server,
   Settings,
   ShieldCheck,
   Users,
-  Wifi,
   Wrench,
   X,
   Rocket,
@@ -60,8 +56,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import OperationalOverview from "./operational-overview";
 import NotificationCenter from "./notification-center";
 import "./adapter-readiness.css";
+import "./operational.css";
 
 const DeviceInventory = lazy(() => import("./inventory"));
 const RealTimeMonitoring = lazy(() => import("./monitoring"));
@@ -118,17 +116,17 @@ const viewConfig = {
   "Command Center": {
     slug: "command-center",
     title: "Command Center",
-    subtitle: "Friday, 17 July 2026 · 11:18 EAT",
+    subtitle: "Current network operations",
   },
   Devices: {
     slug: "devices",
     title: "Device Inventory",
-    subtitle: "486 managed assets · Last discovery 8 minutes ago",
+    subtitle: "Registered devices and persistent site assignments",
   },
   Monitoring: {
     slug: "monitoring",
     title: "Real-Time Monitoring",
-    subtitle: "8 collectors online · 486 active targets",
+    subtitle: "Observed health and collector freshness",
   },
   Topology: {
     slug: "topology",
@@ -381,15 +379,7 @@ const viewConfig = {
 
 type ViewName = keyof typeof viewConfig;
 type NavItem = { label: ViewName; icon: LucideIcon };
-type Incident = {
-  id: string;
-  title: string;
-  detail: string;
-  severity: "Critical" | "High" | "Warning";
-  since: string;
-  affected: string;
-  owner: string;
-};
+
 
 const navGroups: { label?: string; items: NavItem[] }[] = [
   { items: [{ label: "Command Center", icon: LayoutDashboard }] },
@@ -649,129 +639,13 @@ const searchOptions: { label: string; kind: string; view: ViewName }[] = [
   },
 ];
 
-const incidents: Incident[] = [
-  {
-    id: "INC-2407",
-    title: "North Backhaul",
-    detail: "Packet loss",
-    severity: "Critical",
-    since: "18 minutes",
-    affected: "126 customers",
-    owner: "Network Team",
-  },
-  {
-    id: "INC-2404",
-    title: "Paje Tower",
-    detail: "Capacity",
-    severity: "Warning",
-    since: "42 minutes",
-    affected: "44 customers",
-    owner: "Unassigned",
-  },
-  {
-    id: "INC-2398",
-    title: "UPS Battery Kendwa",
-    detail: "High temperature",
-    severity: "High",
-    since: "1 hour 12 minutes",
-    affected: "14 customers",
-    owner: "Field Team",
-  },
-];
-
-const chartSets: Record<
-  string,
-  { down: number[]; up: number[]; times: string[] }
-> = {
-  "1H": {
-    down: [
-      2.1, 2.18, 2.12, 2.34, 2.42, 2.25, 2.62, 2.48, 2.7, 2.55, 2.82, 2.73,
-      2.84,
-    ],
-    up: [
-      0.48, 0.5, 0.47, 0.58, 0.61, 0.55, 0.64, 0.59, 0.68, 0.62, 0.7, 0.66,
-      0.642,
-    ],
-    times: ["10:18", "10:33", "10:48", "11:03", "11:18"],
-  },
-  "6H": {
-    down: [
-      2.02, 2.28, 1.94, 2.37, 2.18, 2.51, 2.24, 2.44, 2.2, 2.62, 2.34, 2.91,
-      2.55, 2.41, 2.08, 2.42, 2.12, 2.39, 2.16, 2.31,
-    ],
-    up: [
-      0.49, 0.58, 0.55, 0.61, 0.47, 0.57, 0.5, 0.54, 0.46, 0.52, 0.48, 0.59,
-      0.53, 0.51, 0.43, 0.49, 0.44, 0.5, 0.41, 0.45,
-    ],
-    times: ["06:00", "07:00", "08:00", "09:00", "10:00", "11:00"],
-  },
-  "24H": {
-    down: [
-      0.9, 0.75, 0.68, 0.62, 0.7, 0.92, 1.34, 1.72, 2.05, 2.16, 2.24, 2.31,
-      2.45, 2.28, 2.41, 2.52, 2.68, 2.92, 3.18, 3.02, 2.81, 2.55, 2.41, 2.28,
-    ],
-    up: [
-      0.22, 0.18, 0.16, 0.15, 0.2, 0.28, 0.35, 0.41, 0.48, 0.52, 0.55, 0.58,
-      0.61, 0.56, 0.59, 0.62, 0.66, 0.69, 0.74, 0.72, 0.68, 0.61, 0.57, 0.54,
-    ],
-    times: ["00:00", "06:00", "12:00", "18:00", "23:59"],
-  },
-  "7D": {
-    down: [2.62, 2.48, 2.71, 2.91, 3.12, 2.84, 2.76],
-    up: [0.59, 0.54, 0.61, 0.68, 0.72, 0.64, 0.62],
-    times: ["Fri", "Sat", "Sun", "Mon", "Tue", "Wed", "Thu"],
-  },
-  "30D": {
-    down: [
-      2.22, 2.31, 2.28, 2.44, 2.51, 2.46, 2.62, 2.57, 2.71, 2.67, 2.82, 2.76,
-      2.91, 2.84, 3.04,
-    ],
-    up: [
-      0.46, 0.49, 0.47, 0.52, 0.54, 0.51, 0.58, 0.56, 0.61, 0.59, 0.65, 0.62,
-      0.68, 0.64, 0.7,
-    ],
-    times: ["18 Jun", "25 Jun", "02 Jul", "09 Jul", "17 Jul"],
-  },
-};
-
-const regions = [
-  { name: "Zanzibar North", value: 98, status: "healthy" },
-  { name: "Zanzibar South", value: 93, status: "healthy" },
-  { name: "Central / Urban West", value: 90, status: "warning" },
-];
-
-function points(values: number[], width = 700, height = 190, max = 4) {
-  return values
-    .map((value, index) => {
-      const x = (index / (values.length - 1)) * width;
-      const y = height - (value / max) * height;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-}
-
-function SeverityBadge({ severity }: { severity: Incident["severity"] }) {
-  return (
-    <span className={`severity severity-${severity.toLowerCase()}`}>
-      {severity}
-    </span>
-  );
-}
-
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [range, setRange] = useState("6H");
-  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(
-    null,
-  );
   const [query, setQuery] = useState("");
   const [notice, setNotice] = useState("");
-  const [regionFilter, setRegionFilter] = useState("");
   const [activeView, setActiveView] = useState<ViewName>("Command Center");
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [navHasMore, setNavHasMore] = useState(false);
 
-  const chart = chartSets[range];
   const searchResults = useMemo(() => {
     if (!query.trim()) return [];
     const normalized = query.trim().toLowerCase();
@@ -1038,15 +912,6 @@ export default function Home() {
     }
   };
 
-  const refreshDashboard = () => {
-    if (isRefreshing) return;
-    setIsRefreshing(true);
-    window.setTimeout(() => {
-      setIsRefreshing(false);
-      setNotice("Dashboard data refreshed successfully.");
-      window.setTimeout(() => setNotice(""), 2800);
-    }, 700);
-  };
 
   return (
     <div className="app-shell">
@@ -1309,380 +1174,7 @@ export default function Home() {
                 initialTab={activeView === "Incidents" ? "incidents" : "alerts"}
               />
             ) : (
-              <main className="dashboard">
-                <section className="dashboard-intro">
-                  <div>
-                    <p className="eyebrow">LIVE OPERATIONS</p>
-                    <h2>Network overview</h2>
-                    <p>Real-time service health across the Zanzibar network.</p>
-                  </div>
-                  <button
-                    className="secondary-button"
-                    onClick={refreshDashboard}
-                    disabled={isRefreshing}
-                    aria-busy={isRefreshing}
-                  >
-                    <Activity
-                      className={isRefreshing ? "refresh-spin" : ""}
-                      size={16}
-                    />{" "}
-                    {isRefreshing ? "Refreshing…" : "Refresh data"}
-                  </button>
-                </section>
-
-                <section className="metric-grid" aria-label="Network summary">
-                  <button
-                    className="metric-card"
-                    onClick={() => setNotice("Availability report selected.")}
-                  >
-                    <span className="metric-icon icon-green">
-                      <CheckCircle2 />
-                    </span>
-                    <span className="metric-copy">
-                      <span>Network Availability</span>
-                      <strong className="text-green">99.94%</strong>
-                      <small className="trend-up">↑ 0.08% from yesterday</small>
-                    </span>
-                  </button>
-                  <button
-                    className="metric-card"
-                    onClick={() => setSelectedIncident(incidents[0])}
-                  >
-                    <span className="metric-icon icon-red">
-                      <AlertTriangle />
-                    </span>
-                    <span className="metric-copy">
-                      <span>Active Incidents</span>
-                      <strong className="text-red">7</strong>
-                      <small>2 require acknowledgement</small>
-                    </span>
-                  </button>
-                  <button
-                    className="metric-card"
-                    onClick={() => setNotice("Offline device filter applied.")}
-                  >
-                    <span className="metric-icon icon-red">
-                      <HardDrive />
-                    </span>
-                    <span className="metric-copy">
-                      <span>Devices Offline</span>
-                      <strong className="text-red">12</strong>
-                      <small>of 486 monitored devices</small>
-                    </span>
-                  </button>
-                  <button
-                    className="metric-card"
-                    onClick={() => setNotice("Customer impact view selected.")}
-                  >
-                    <span className="metric-icon icon-amber">
-                      <Users />
-                    </span>
-                    <span className="metric-copy">
-                      <span>Customers Impacted</span>
-                      <strong className="text-amber">184</strong>
-                      <small>8.3% of active services</small>
-                    </span>
-                  </button>
-                </section>
-
-                <section className="primary-grid">
-                  <article className="panel traffic-panel">
-                    <div className="panel-heading">
-                      <div>
-                        <span className="panel-kicker">NETWORK THROUGHPUT</span>
-                        <h3>Bandwidth traffic</h3>
-                      </div>
-                      <div
-                        className="range-control"
-                        role="tablist"
-                        aria-label="Chart time range"
-                      >
-                        {Object.keys(chartSets).map((item) => (
-                          <button
-                            role="tab"
-                            aria-selected={range === item}
-                            tabIndex={range === item ? 0 : -1}
-                            key={item}
-                            className={range === item ? "range-active" : ""}
-                            onClick={() => setRange(item)}
-                          >
-                            {item}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="traffic-stats">
-                      <span>
-                        <i className="legend-blue" /> <strong>2.84 Gbps</strong>{" "}
-                        Down
-                      </span>
-                      <span>
-                        <i className="legend-green" /> <strong>642 Mbps</strong>{" "}
-                        Up
-                      </span>
-                      <span className="capacity-note">68% peak capacity</span>
-                    </div>
-                    <div
-                      className="chart-area"
-                      aria-label={`Bandwidth chart for ${range}`}
-                    >
-                      <div className="y-axis">
-                        <span>4 Gbps</span>
-                        <span>3 Gbps</span>
-                        <span>2 Gbps</span>
-                        <span>1 Gbps</span>
-                        <span>0</span>
-                      </div>
-                      <div className="chart-plot">
-                        <svg
-                          viewBox="0 0 700 190"
-                          preserveAspectRatio="none"
-                          role="img"
-                          aria-label="Download and upload bandwidth trends"
-                        >
-                          {[0, 47.5, 95, 142.5, 190].map((y) => (
-                            <line
-                              key={y}
-                              x1="0"
-                              y1={y}
-                              x2="700"
-                              y2={y}
-                              className="chart-grid-line"
-                            />
-                          ))}
-                          <polyline
-                            points={points(chart.down)}
-                            className="line-download"
-                          />
-                          <polyline
-                            points={points(chart.up)}
-                            className="line-upload"
-                          />
-                        </svg>
-                        <div className="x-axis">
-                          {chart.times.map((time) => (
-                            <span key={time}>{time}</span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-
-                  <article className="panel incidents-panel">
-                    <div className="panel-heading">
-                      <div>
-                        <span className="panel-kicker">ACTION REQUIRED</span>
-                        <h3>Active incidents</h3>
-                      </div>
-                      <button
-                        className="text-button"
-                        onClick={() =>
-                          setNotice("All incidents view selected.")
-                        }
-                      >
-                        View all
-                      </button>
-                    </div>
-                    <div className="incident-list">
-                      {incidents.map((incident) => (
-                        <button
-                          className="incident-row"
-                          key={incident.id}
-                          onClick={() => setSelectedIncident(incident)}
-                        >
-                          <span
-                            className={`incident-icon incident-${incident.severity.toLowerCase()}`}
-                          >
-                            <AlertTriangle size={19} />
-                          </span>
-                          <span className="incident-copy">
-                            <strong>{incident.title}</strong>
-                            <small>
-                              {incident.detail} · {incident.since}
-                            </small>
-                          </span>
-                          <SeverityBadge severity={incident.severity} />
-                          <ChevronRight size={18} className="row-chevron" />
-                        </button>
-                      ))}
-                    </div>
-                    <div className="incident-summary">
-                      <span>
-                        <strong>7</strong> open
-                      </span>
-                      <span>
-                        <strong>3</strong> assigned
-                      </span>
-                      <span>
-                        <strong>2</strong> escalating
-                      </span>
-                    </div>
-                  </article>
-                </section>
-
-                <section className="secondary-grid">
-                  <article className="panel compact-panel">
-                    <div className="panel-heading">
-                      <div>
-                        <span className="panel-kicker">
-                          SERVICE AVAILABILITY
-                        </span>
-                        <h3>Network health by region</h3>
-                      </div>
-                      <button
-                        className="more-button"
-                        aria-label="Region filters"
-                      >
-                        •••
-                      </button>
-                    </div>
-                    <div className="region-list">
-                      {regions.map((region) => (
-                        <button
-                          className={`region-row ${regionFilter === region.name ? "region-selected" : ""}`}
-                          key={region.name}
-                          onClick={() =>
-                            setRegionFilter(
-                              regionFilter === region.name ? "" : region.name,
-                            )
-                          }
-                        >
-                          <span>
-                            <strong>{region.name}</strong>
-                            <small>
-                              {region.value === 90
-                                ? "2 degraded sites"
-                                : "All major links online"}
-                            </small>
-                          </span>
-                          <b>{region.value}%</b>
-                          <i>
-                            <em
-                              style={{ width: `${region.value}%` }}
-                              className={region.status}
-                            />
-                          </i>
-                        </button>
-                      ))}
-                    </div>
-                  </article>
-
-                  <article className="panel compact-panel topology-panel">
-                    <div className="panel-heading">
-                      <div>
-                        <span className="panel-kicker">LIVE DEPENDENCIES</span>
-                        <h3>Topology & service health</h3>
-                      </div>
-                      <button
-                        className="text-button"
-                        onClick={() => navigate("Topology")}
-                      >
-                        Open map
-                      </button>
-                    </div>
-                    <div className="topology-flow">
-                      <div className="topology-node node-core">
-                        <Cloud size={21} />
-                        <span>Upstream</span>
-                      </div>
-                      <span className="link-line">
-                        <i />
-                      </span>
-                      <div className="topology-node node-core">
-                        <Router size={21} />
-                        <span>Core</span>
-                      </div>
-                      <span className="link-line">
-                        <i />
-                      </span>
-                      <div className="topology-stack">
-                        <div className="topology-node node-up">
-                          <Radio size={18} />
-                          <span>North</span>
-                        </div>
-                        <div className="topology-node node-warning">
-                          <Wifi size={18} />
-                          <span>Paje</span>
-                        </div>
-                      </div>
-                      <span className="link-line">
-                        <i />
-                      </span>
-                      <div className="topology-stack">
-                        <div className="topology-node node-up">
-                          <Users size={18} />
-                          <span>1,482</span>
-                        </div>
-                        <div className="topology-node node-down">
-                          <Users size={18} />
-                          <span>184</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="topology-legend">
-                      <span>
-                        <i className="dot-up" /> Up
-                      </span>
-                      <span>
-                        <i className="dot-warning" /> Degraded
-                      </span>
-                      <span>
-                        <i className="dot-down" /> Down
-                      </span>
-                      <span>
-                        <i className="dot-unknown" /> Unknown
-                      </span>
-                    </div>
-                  </article>
-
-                  <article className="panel compact-panel recovery-panel">
-                    <div className="panel-heading">
-                      <div>
-                        <span className="panel-kicker">LAST 24 HOURS</span>
-                        <h3>Recent recovery</h3>
-                      </div>
-                      <button
-                        className="text-button"
-                        onClick={() => setNotice("Recovery history selected.")}
-                      >
-                        View all
-                      </button>
-                    </div>
-                    <div className="recovery-list">
-                      <button>
-                        <span className="recovery-icon">
-                          <CheckCircle2 size={19} />
-                        </span>
-                        <span>
-                          <strong>Wireless Link Kibweni</strong>
-                          <small>Resolved · Today, 10:15</small>
-                        </span>
-                        <em>12m</em>
-                      </button>
-                      <button>
-                        <span className="recovery-icon">
-                          <CheckCircle2 size={19} />
-                        </span>
-                        <span>
-                          <strong>OLT-03 Unguja</strong>
-                          <small>Resolved · Today, 08:42</small>
-                        </span>
-                        <em>28m</em>
-                      </button>
-                      <button>
-                        <span className="recovery-icon">
-                          <CheckCircle2 size={19} />
-                        </span>
-                        <span>
-                          <strong>Switch SW-PJE-02</strong>
-                          <small>Resolved · Today, 07:26</small>
-                        </span>
-                        <em>9m</em>
-                      </button>
-                    </div>
-                  </article>
-                </section>
-              </main>
+              <OperationalOverview />
             )}
           </Suspense>
         </div>
@@ -1695,104 +1187,6 @@ export default function Home() {
         </div>
       )}
 
-      {selectedIncident && (
-        <div className="drawer-layer">
-          <button
-            className="drawer-scrim"
-            aria-label="Close incident details"
-            onClick={() => setSelectedIncident(null)}
-          />
-          <aside
-            className="incident-drawer"
-            role="dialog"
-            aria-modal="true"
-            tabIndex={-1}
-            aria-label={`${selectedIncident.title} incident details`}
-          >
-            <div className="drawer-head">
-              <div>
-                <span className="panel-kicker">{selectedIncident.id}</span>
-                <h2>{selectedIncident.title}</h2>
-              </div>
-              <button
-                className="icon-button"
-                onClick={() => setSelectedIncident(null)}
-                aria-label="Close incident"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <SeverityBadge severity={selectedIncident.severity} />
-            <p className="drawer-description">
-              {selectedIncident.detail} is affecting dependent network services.
-              Root-cause correlation is active.
-            </p>
-            <dl className="incident-details">
-              <div>
-                <dt>Duration</dt>
-                <dd>{selectedIncident.since}</dd>
-              </div>
-              <div>
-                <dt>Customer impact</dt>
-                <dd>{selectedIncident.affected}</dd>
-              </div>
-              <div>
-                <dt>Assigned team</dt>
-                <dd>{selectedIncident.owner}</dd>
-              </div>
-              <div>
-                <dt>Source</dt>
-                <dd>Real-time monitoring</dd>
-              </div>
-            </dl>
-            <div className="drawer-timeline">
-              <h3>Incident timeline</h3>
-              <div>
-                <i />
-                <span>
-                  <strong>Alert correlated</strong>
-                  <small>Downstream alarms grouped under this incident</small>
-                </span>
-              </div>
-              <div>
-                <i />
-                <span>
-                  <strong>Service impact calculated</strong>
-                  <small>
-                    {selectedIncident.affected} linked through topology
-                  </small>
-                </span>
-              </div>
-              <div>
-                <i className="timeline-muted" />
-                <span>
-                  <strong>Investigation in progress</strong>
-                  <small>Awaiting operator update</small>
-                </span>
-              </div>
-            </div>
-            <div className="drawer-actions">
-              <button
-                className="primary-button"
-                onClick={() => {
-                  setNotice(`${selectedIncident.id} acknowledged.`);
-                  setSelectedIncident(null);
-                }}
-              >
-                Acknowledge incident
-              </button>
-              <button
-                className="secondary-button"
-                onClick={() =>
-                  setNotice("Full incident workspace will be connected next.")
-                }
-              >
-                Open workspace
-              </button>
-            </div>
-          </aside>
-        </div>
-      )}
     </div>
   );
 }

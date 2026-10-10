@@ -1,3 +1,4 @@
+import { recordHeartbeat, recordObservation } from "../../../../../db/observations";
 import { and, desc, eq, ne } from "drizzle-orm";
 import { getDb } from "../../../../../db";
 import { availabilitySamples, collectors, devices, incidents, notifications } from "../../../../../db/schema";
@@ -52,20 +53,29 @@ export async function POST(request: Request) {
   }
 
   const observedAt = typeof payload.observedAt === "string" ? new Date(payload.observedAt) : new Date(Number.NaN);
-  const ageMs = Math.abs(Date.now() - observedAt.getTime());
+  const ageMs = Date.now() - observedAt.getTime();
   const latencyValid = payload.latencyMs === null || integerBetween(payload.latencyMs, 0, 120000);
   const handshakeValid = payload.handshakeAgeSeconds === null || integerBetween(payload.handshakeAgeSeconds, 0, 604800);
-  if (payload.deviceId !== DEVICE_ID || payload.collectorId !== COLLECTOR_ID || typeof payload.online !== "boolean" || !Number.isFinite(observedAt.getTime()) || ageMs > 10 * 60 * 1000 || !latencyValid || !integerBetween(payload.packetLossPct, 0, 100) || !handshakeValid) {
+  if (typeof payload.deviceId !== "string" || payload.deviceId.length > 80 || typeof payload.collectorId !== "string" || payload.collectorId.length > 80 || typeof payload.online !== "boolean" || !Number.isFinite(observedAt.getTime()) || (ageMs > 10 * 60 * 1000 || ageMs < -120000) || !latencyValid || !integerBetween(payload.packetLossPct, 0, 100) || !handshakeValid) {
     return Response.json({ error: "Payload validation failed" }, { status: 422 });
   }
 
   const db = getDb();
   const now = new Date().toISOString();
   const version = typeof payload.collectorVersion === "string" ? payload.collectorVersion.slice(0, 32) : "unknown";
-  await db.insert(collectors).values({ id:COLLECTOR_ID,name:"DOXA VPS",region:"WireGuard hub",status:"online",lastSeenAt:now,version }).onConflictDoUpdate({ target:collectors.id,set:{status:"online",lastSeenAt:now,version,updatedAt:now} });
-  await db.insert(devices).values({ id:DEVICE_ID,hostname:"cudy-lt400-pilot",vendor:"Cudy",model:"LT400 V2.0",managementIp:"10.66.66.3",site:"WireGuard pilot",status:payload.online?"online":"offline",source:"nocx-collector",lastSeenAt:payload.online?payload.observedAt as string:null }).onConflictDoUpdate({ target:devices.id,set:{status:payload.online?"online":"offline",lastSeenAt:payload.online?payload.observedAt as string:null,updatedAt:now} });
-  const sampleId = `sample-${COLLECTOR_ID}-${DEVICE_ID}-${observedAt.getTime()}`;
-  await db.insert(availabilitySamples).values({ id:sampleId,collectorId:COLLECTOR_ID,deviceId:DEVICE_ID,observedAt:observedAt.toISOString(),online:payload.online,latencyMs:payload.latencyMs as number|null,packetLossPct:payload.packetLossPct as number,handshakeAgeSeconds:payload.handshakeAgeSeconds as number|null }).onConflictDoNothing();
+  const deviceId = payload.deviceId as string, collectorId = payload.collectorId as string;
+  if (deviceId === DEVICE_ID && collectorId === COLLECTOR_ID) {
+    await db.insert(collectors).values({ id: COLLECTOR_ID, name: "DOXA VPS", region: "WireGuard hub", version }).onConflictDoNothing();
+    await db.insert(devices).values({ id: DEVICE_ID, hostname: "cudy-lt400-pilot", vendor: "Cudy", model: "LT400 V2.0", managementIp: "10.66.66.3", site: "WireGuard pilot", collectorId: COLLECTOR_ID, source: "nocx-collector" }).onConflictDoNothing();
+  }
+  const device = (await db.select().from(devices).where(eq(devices.id, deviceId)).limit(1))[0];
+  if (!device || device.collectorId !== collectorId || !device.monitoringEnabled) return Response.json({ error: "Device is not enabled for this collector" }, { status: 403 });
+  await recordHeartbeat(db, collectorId);
+  const advanced = await recordObservation(db, deviceId, observedAt.toISOString(), payload.online as boolean);
+  const sampleId = `sample-${collectorId}-${deviceId}-${observedAt.getTime()}`;
+  await db.insert(availabilitySamples).values({ id:sampleId,collectorId,deviceId,observedAt:observedAt.toISOString(),online:payload.online,latencyMs:payload.latencyMs as number|null,packetLossPct:payload.packetLossPct as number,handshakeAgeSeconds:payload.handshakeAgeSeconds as number|null }).onConflictDoNothing();
+
+  if (deviceId !== DEVICE_ID || !advanced) return Response.json({ accepted: true, sampleId, deviceId, networkWrites: false }, { status: 202 });
 
   const recent = await db.select({ online:availabilitySamples.online, observedAt:availabilitySamples.observedAt })
     .from(availabilitySamples)
