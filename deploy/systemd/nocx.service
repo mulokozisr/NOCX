@@ -1,0 +1,30 @@
+[Unit]
+Description=NOC-X application
+After=network.target
+
+[Service]
+Type=simple
+User=nocx
+Group=nocx
+WorkingDirectory=/opt/nocx/current
+Environment=NODE_ENV=production
+Environment=NOCX_RELEASE=/opt/nocx/current
+Environment=NOCX_DATABASE=/var/lib/nocx/nocx.sqlite
+Environment=NOCX_PUBLIC_ORIGIN=https://nms.bandokios.com
+EnvironmentFile=-/etc/nocx/runtime.env
+ExecStart=/opt/nocx-runtime/node-v24.22.2-linux-x64/bin/node /opt/nocx/current/runtime/server.mjs
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/nocx
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

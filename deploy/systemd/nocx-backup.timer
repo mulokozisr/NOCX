@@ -1,0 +1,11 @@
+[Unit]
+Description=Hourly encrypted NOC-X backups
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=120
+Persistent=true
+Unit=nocx-backup.service
+
+[Install]
+WantedBy=timers.target

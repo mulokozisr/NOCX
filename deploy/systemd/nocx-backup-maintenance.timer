@@ -1,0 +1,11 @@
+[Unit]
+Description=Weekly NOC-X backup repository maintenance
+
+[Timer]
+OnCalendar=Sun *-*-* 03:30:00 UTC
+RandomizedDelaySec=300
+Persistent=true
+Unit=nocx-backup-maintenance.service
+
+[Install]
+WantedBy=timers.target

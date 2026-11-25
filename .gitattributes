@@ -1,0 +1,2 @@
+# Store every file byte-for-byte as it is on the server.
+* -text

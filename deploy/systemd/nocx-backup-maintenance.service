@@ -1,0 +1,18 @@
+[Unit]
+Description=Check and prune encrypted NOC-X backup repository
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/nocx/backup.env
+Environment=RESTIC_CACHE_DIR=/var/lib/nocx-backup/cache
+ExecStart=/usr/bin/flock /var/lib/nocx-backup/backup.lock /bin/sh -c '/usr/local/sbin/nocx-restic check && /usr/local/sbin/nocx-restic prune'
+UMask=0077
+Nice=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/nocx-backup
+TimeoutStartSec=2h

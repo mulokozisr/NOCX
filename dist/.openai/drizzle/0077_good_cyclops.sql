@@ -1,0 +1,1 @@
+ALTER TABLE `customer_services` ADD `site_id` text REFERENCES network_sites(id);

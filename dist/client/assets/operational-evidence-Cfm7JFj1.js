@@ -1,0 +1,1 @@
+function e(e){let t=String(e??``);return`"${(/^[\s]*[=+@-]|^[\t\r\n]/.test(t)?`'${t}`:t).replaceAll(`"`,`""`)}"`}export{e as t};

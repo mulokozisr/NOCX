@@ -1,0 +1,17 @@
+node_modules/
+.DS_Store
+*.log
+
+# server secrets and data (never commit)
+.env*
+*.pem
+*.sqlite
+*.sqlite-*
+backup.env
+backup-password
+backup-ssh.conf
+backup_known_hosts
+backup_ed25519*
+runtime.env*
+snmp-migration-record.json
+nocx-wireguard-credential-transfer.json

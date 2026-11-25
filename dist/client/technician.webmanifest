@@ -1,0 +1,19 @@
+{
+  "name": "NOCX Field Technician",
+  "short_name": "NOCX Field",
+  "description": "A clear read-only mobile view of live devices, incidents, sites and approved network evidence.",
+  "start_url": "/technician",
+  "scope": "/technician",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/technician-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
